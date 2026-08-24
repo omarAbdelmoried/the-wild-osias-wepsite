@@ -34,7 +34,7 @@ export async function updateProfileGuest(formData) {
   if (!session.user.email) throw new Error("You are not logged in");
 
   const [nationality, countryFlag] = formData.get("nationality").split("%");
-  const nationalID = formData.get("nationalID");
+  const nationalID = formData.get("nationalID").trim();
   if (!/^[A-Za-z0-9]{6,12}$/.test(nationalID))
     throw new Error("Invalid national ID");
 

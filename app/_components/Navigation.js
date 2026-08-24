@@ -7,8 +7,8 @@ export default async function Navigation() {
   const isSingedIn = !!session?.user?.name;
 
   return (
-    <nav className="z-10 text-xl">
-      <ul className="flex gap-16 items-center">
+    <nav className="z-10 text-lg sm:text-xl">
+      <ul className="flex flex-wrap justify-center gap-x-5 gap-y-2 sm:gap-x-8 md:gap-x-12 items-center">
         <li>
           <Link href="/" className="hover:text-accent-400 transition-colors">
             Home
@@ -31,29 +31,29 @@ export default async function Navigation() {
           </Link>
         </li>
         <li>
-          {isSingedIn? (
-          <span className="flex items-center gap-2">
-            <Image
-              width={40}
-              height={40}
-              src={session.user.image}
-              className="rounded-full"
-              alt="Guest Avatar"
-            />
+          {isSingedIn ? (
+            <span className="flex items-center gap-2">
+              <Image
+                width={40}
+                height={40}
+                src={session.user.image}
+                className="rounded-full"
+                alt="Guest Avatar"
+              />
+              <Link
+                href="/account"
+                className="hover:text-accent-400 transition-colors"
+              >
+                Guest area
+              </Link>
+            </span>
+          ) : (
             <Link
               href="/account"
               className="hover:text-accent-400 transition-colors"
             >
-              Guest area
+              signIn
             </Link>
-          </span>
-          ) : (
-          <Link
-            href="/account"
-            className="hover:text-accent-400 transition-colors"
-          >
-            signIn
-          </Link>
           )}
         </li>
       </ul>

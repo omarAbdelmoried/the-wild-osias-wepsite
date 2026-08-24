@@ -1,4 +1,5 @@
 import Header from "./_components/Header";
+import Footer from "./_components/Footer";
 import Logo from "./_components/Logo";
 import Navigation from "./_components/Navigation";
 import { ReservationProvider } from "./_components/ReservationContex";
@@ -27,13 +28,14 @@ export default function RootLayout({ children }) {
         <Header />
         <hr className="border-primary-100 mx-auto z-30 w-2/4" />
         <div
-          className="flex-1 px-8 py-12
+          className="flex-1 px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-12
         "
         >
           <main className="max-w-7xl mx-auto ">
             <ReservationProvider>{children}</ReservationProvider>
           </main>
         </div>
+        <Footer />
       </body>
     </html>
   );
