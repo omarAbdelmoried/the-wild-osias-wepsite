@@ -37,7 +37,7 @@ async function Page({ params }) {
         <Suspense fallback={<Spinner />}>
           <Reservation cabin={cabin} />
         </Suspense>
-          <ReservationReminder />
+        <ReservationReminder />
       </div>
     </div>
   );

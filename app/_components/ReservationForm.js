@@ -21,6 +21,7 @@ function ReservationForm({ cabin, user }) {
     numNights,
     cabinPrice,
     cabinId,
+    maxCapacity,
   };
 
   const handelCreateReservationWithDate = handelCreateReservation.bind(
@@ -46,6 +47,29 @@ function ReservationForm({ cabin, user }) {
       </div>
 
       <form
+        onSubmit={(event) => {
+          const form = event.currentTarget;
+          const numGuests = Number(new FormData(form).get("numGuests"));
+          const guestField = form.elements.numGuests;
+
+          guestField.setCustomValidity("");
+          if (!startDate || !endDate) {
+            event.preventDefault();
+            guestField.setCustomValidity("Select check-in and check-out dates.");
+          } else if (endDate <= startDate) {
+            event.preventDefault();
+            guestField.setCustomValidity(
+              "The check-out date must be after the check-in date."
+            );
+          } else if (numGuests > maxCapacity) {
+            event.preventDefault();
+            guestField.setCustomValidity(
+              "This cabin cannot accommodate this number of guests."
+            );
+          }
+
+          if (guestField.validationMessage) guestField.reportValidity();
+        }}
         action={(formData) => {
           handelCreateReservationWithDate(formData);
 

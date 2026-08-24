@@ -1,6 +1,6 @@
-import { supabase } from "./supabase";
+import supabase from "./supabase";
 import { notFound } from "next/navigation";
-import { eachDayOfInterval } from "date-fns";
+import { addDays, eachDayOfInterval } from "date-fns";
 
 /////////////
 // GET
@@ -39,6 +39,7 @@ export const getCabins = async function () {
     .from("cabins")
     .select("id, name, maxCapacity, regularPrice, discount, image")
     .order("name");
+  console.log("cabins data", data);
   if (error) {
     console.error(error);
     throw new Error("Cabins could not be loaded");
@@ -46,7 +47,7 @@ export const getCabins = async function () {
 
   //For testing
   // await new Promise((res) => setTimeout(res, 1000));
-  return data??[];
+  return data ?? [];
 };
 // Guests are uniquely identified by their email address
 export async function getGuest(email) {
@@ -80,7 +81,7 @@ export async function getBookings(guestId) {
     .from("bookings")
     // We actually also need data on the cabins as well. But let's ONLY take the data that we actually need, in order to reduce downloaded data.
     .select(
-      "id, created_at, startDate, endDate, numNights, numGuests, totalPrice, guestId, cabinId, cabins(name, image)"
+      "id, created_at, startDate, endDate, numNights, numGuests, totalPrice, guestId, cabinId, cabins(name, image)",
     )
     .eq("guestId", guestId)
     .order("startDate");
@@ -115,7 +116,7 @@ export async function getBookedDatesByCabinId(cabinId) {
     .map((booking) => {
       return eachDayOfInterval({
         start: new Date(booking.startDate),
-        end: new Date(booking.endDate),
+        end: addDays(new Date(booking.endDate), -1),
       });
     })
     .flat();
@@ -145,7 +146,7 @@ export async function getBookedDatesByGuestId(guestId) {
     .map((booking) => {
       return eachDayOfInterval({
         start: new Date(booking.startDate),
-        end: new Date(booking.endDate),
+        end: addDays(new Date(booking.endDate), -1),
       });
     })
     .flat();
@@ -167,7 +168,7 @@ export async function getSettings() {
 export async function getCountries() {
   try {
     const res = await fetch(
-      "https://restcountries.com/v2/all?fields=name,flag"
+      "https://restcountries.com/v2/all?fields=name,flag",
     );
     const countries = await res.json();
     return countries;

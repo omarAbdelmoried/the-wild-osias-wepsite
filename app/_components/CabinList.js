@@ -4,13 +4,18 @@ import { getCabins } from "@/app/_lips/data-service";
 async function CabinList({ capacityFilter }) {
   const cabins = await getCabins();
   if (!cabins) return null;
-  const filters = {
-    all: () => cabins,
-    small: () => cabins.filter((cabin) => cabin.maxCapacity <= 2),
-    medium: () =>
-      cabins.filter((cabin) => cabin.maxCapacity > 2 && cabin.maxCapacity <= 6),
-    large: () => cabins.filter((cabin) => cabin.maxCapacity > 6),
-  };
+  const filters =
+    {
+      all: () => cabins,
+      small: () => cabins.filter((cabin) => cabin.maxCapacity <= 2),
+      medium: () =>
+        cabins.filter(
+          (cabin) => cabin.maxCapacity > 2 && cabin.maxCapacity <= 6,
+        ),
+      large: () => cabins.filter((cabin) => cabin.maxCapacity > 6),
+    } || cabins;
+  console.log("capacityFilter", capacityFilter);
+  console.log("filteredCabins", cabins);
 
   const filterByCapacity = (filters[capacityFilter] || filters.all)();
 

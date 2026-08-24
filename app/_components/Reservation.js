@@ -7,9 +7,20 @@ import {
 import DateSelector from "./DateSelector";
 import ReservationForm from "./ReservationForm";
 import LoginMessage from "./LoginMessage";
+import SignInButton from "./SignInButton";
 
 async function Reservation({ cabin }) {
   const session = await auth();
+  if (!session?.user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full ">
+        <p className="text-lg text-primary-200 my-4">
+          Please log in to make a reservation.
+        </p>
+        <SignInButton />
+      </div>
+    );
+  }
 
   const [cabinBookings, guestsBookings, settings] = await Promise.all([
     getBookedDatesByCabinId(cabin.id),
