@@ -1,69 +1,74 @@
 "use client";
 
-import { useState } from "react";
-
-const initialForm = {
-  name: "",
-  email: "",
-  subject: "",
-  message: "",
-};
+import { forwardRef } from "react";
+import { useContactForm } from "./useContactForm";
 
 function ContactForm() {
-  const [form, setForm] = useState(initialForm);
-  const [isReady, setIsReady] = useState(false);
-
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setForm((currentForm) => ({ ...currentForm, [name]: value }));
-    setIsReady(false);
-  }
-
-  function handleSubmit(event) {
-    event.preventDefault();
-
-    const body = `Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`;
-    const mailto = `mailto:hello@thewildoasis.com?subject=${encodeURIComponent(
-      form.subject
-    )}&body=${encodeURIComponent(body)}`;
-
-    window.location.href = mailto;
-    setIsReady(true);
-  }
+  const {
+    register,
+    submitForm,
+    handleChange,
+    errors,
+    isSubmitting,
+    status,
+    errorMessage,
+  } = useContactForm();
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={submitForm}
       className="bg-primary-900 p-8 text-lg shadow-xl sm:p-10"
     >
       <div className="grid gap-6 sm:grid-cols-2">
         <Field
           id="name"
           label="Your name"
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          required
+          error={errors.name?.message}
+          {...register("name", {
+            required: "Please enter your name.",
+            onChange: handleChange,
+          })}
         />
         <Field
           id="email"
           label="Email address"
-          name="email"
           type="email"
-          value={form.email}
-          onChange={handleChange}
-          required
+          error={errors.email?.message}
+          {...register("email", {
+            required: "Please enter your email address.",
+            pattern: {
+              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+              message: "Please enter a valid email address.",
+            },
+            onChange: handleChange,
+          })}
+        />
+      </div>
+
+      <div className="mt-6">
+        <Field
+          id="phone"
+          label="Phone number"
+          type="tel"
+          placeholder="How can we reach you?"
+          error={errors.phone?.message}
+          {...register("phone", {
+            required: "Please enter your phone number.",
+            onChange: handleChange,
+          })}
         />
       </div>
 
       <div className="mt-6">
         <Field
           id="subject"
-          label="What can we help with?"
-          name="subject"
-          value={form.subject}
-          onChange={handleChange}
-          required
+          label="Subject"
+          placeholder="What can we help with?"
+          error={errors.subject?.message}
+          {...register("subject", {
+            required: "Please enter a subject.",
+            onChange: handleChange,
+          })}
         />
       </div>
 
@@ -71,14 +76,18 @@ function ContactForm() {
         <label htmlFor="message">Your message</label>
         <textarea
           id="message"
-          name="message"
-          value={form.message}
-          onChange={handleChange}
-          required
-          rows={6}
+          aria-invalid={errors.message ? "true" : "false"}
+          {...register("message", {
+            required: "Please enter your message.",
+            onChange: handleChange,
+          })}
+          rows={7}
           placeholder="Tell us a little about what you have in mind..."
-          className="w-full resize-y bg-primary-100 px-5 py-3 text-primary-800 shadow-sm outline-none transition-colors placeholder:text-primary-500 focus:ring-2 focus:ring-accent-400"
+          className="min-h-44 w-full resize-y bg-primary-100 px-5 py-3 text-primary-800 shadow-sm outline-none transition-colors placeholder:text-primary-500 focus:ring-2 focus:ring-accent-400"
         />
+        {errors.message && (
+          <p className="text-sm text-red-300">{errors.message.message}</p>
+        )}
       </div>
 
       <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -87,32 +96,43 @@ function ContactForm() {
         </p>
         <button
           type="submit"
+          disabled={isSubmitting}
           className="bg-accent-500 px-8 py-4 font-semibold text-primary-800 transition-colors hover:bg-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-300 focus:ring-offset-2 focus:ring-offset-primary-900"
         >
-          Prepare my email
+          {status === "sending" ? "Sending..." : "Send my message"}
         </button>
       </div>
 
-      {isReady && (
+      {status === "sent" && (
         <p role="status" className="mt-5 text-sm text-accent-300">
-          Your email app should open with the message ready to send.
+          Thanks, your message has been sent.
+        </p>
+      )}
+      {status === "error" && (
+        <p role="alert" className="mt-5 text-sm text-red-300">
+          {errorMessage}
         </p>
       )}
     </form>
   );
 }
 
-function Field({ id, label, ...props }) {
+const Field = forwardRef(function Field(
+  { id, label, error, ...inputProps },
+  ref,
+) {
   return (
     <div className="space-y-2">
       <label htmlFor={id}>{label}</label>
       <input
         id={id}
+        ref={ref}
         className="w-full bg-primary-100 px-5 py-3 text-primary-800 shadow-sm outline-none transition-colors placeholder:text-primary-500 focus:ring-2 focus:ring-accent-400"
-        {...props}
+        {...inputProps}
       />
+      {error && <p className="text-sm text-red-300">{error}</p>}
     </div>
   );
-}
+});
 
 export default ContactForm;

@@ -17,12 +17,15 @@ function Footer() {
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-12 md:grid-cols-[1.6fr_1fr_1fr_1.25fr] md:gap-8">
           <div className="max-w-sm">
-            <Link href="/" className="inline-block text-2xl font-semibold tracking-wide text-primary-50">
+            <Link
+              href="/"
+              className="inline-block text-2xl font-semibold tracking-wide text-primary-50"
+            >
               The Wild Oasis
             </Link>
             <p className="mt-5 text-base leading-7 text-primary-300">
-              A quiet place to slow down, breathe deeper, and make room for
-              the good kind of wild.
+              A quiet place to slow down, breathe deeper, and make room for the
+              good kind of wild.
             </p>
           </div>
 
@@ -36,8 +39,11 @@ function Footer() {
             <address className="mt-5 space-y-2 text-base not-italic leading-7 text-primary-300">
               <p>Forest Road 17</p>
               <p>Northwood, 48210</p>
-              <a className="block transition-colors hover:text-accent-300" href="mailto:hello@thewildoasis.com">
-                hello@thewildoasis.com
+              <a
+                className="block transition-colors hover:text-accent-300"
+                href="mailto:omarapdelmorid@gmail.com"
+              >
+                omarapdelmorid@gmail.com
               </a>
             </address>
           </div>
@@ -61,7 +67,10 @@ function FooterColumn({ heading, links }) {
       <ul className="mt-5 space-y-3 text-base text-primary-300">
         {links.map((link) => (
           <li key={link.href}>
-            <Link className="transition-colors hover:text-primary-50" href={link.href}>
+            <Link
+              className="transition-colors hover:text-primary-50"
+              href={link.href}
+            >
               {link.label}
             </Link>
           </li>
