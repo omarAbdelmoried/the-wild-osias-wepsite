@@ -1,11 +1,6 @@
 "use server";
 import { auth, signIn, signOut } from "@/app/_lips/auth";
-import {
-  getBookings,
-  getCabin,
-  getSettings,
-  updateGuest,
-} from "./data-service";
+import { getBookings, getCabin, getSettings, updateGuest } from "./data-service";
 import supabase from "./supabase";
 import { revalidatePath } from "next/cache";
 import { redirect, RedirectType } from "next/navigation";
@@ -34,7 +29,7 @@ export async function updateProfileGuest(formData) {
   if (!session.user.email) throw new Error("You are not logged in");
 
   const [nationality, countryFlag] = formData.get("nationality").split("%");
-  const nationalID = formData.get("nationalID").trim();
+  const nationalID = formData.get("nationalID");
   if (!/^[A-Za-z0-9]{6,12}$/.test(nationalID))
     throw new Error("Invalid national ID");
 

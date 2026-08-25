@@ -63,11 +63,8 @@ function DateSelector({ guestsBookings, cabinBookings, settings, cabin }) {
         numberOfMonths={2}
         disabled={(curData) =>
           isPast(curData) ||
-          guestsBookings.some(
-            (booking) =>
-              isSameDay(booking, curData) ||
-              cabinBookings.some((booking) => isSameDay(booking, curData))
-          )
+          guestsBookings.some((booking) => isSameDay(booking, curData)) ||
+          cabinBookings.some((booking) => isSameDay(booking, curData))
         }
         classNames={{
           day: "rounded-full  hover:text-accent-500 transition-colors ",

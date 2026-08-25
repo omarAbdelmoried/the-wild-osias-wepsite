@@ -39,7 +39,6 @@ export const getCabins = async function () {
     .from("cabins")
     .select("id, name, maxCapacity, regularPrice, discount, image")
     .order("name");
-  console.log("cabins data", data);
   if (error) {
     console.error(error);
     throw new Error("Cabins could not be loaded");
@@ -95,16 +94,11 @@ export async function getBookings(guestId) {
 }
 
 export async function getBookedDatesByCabinId(cabinId) {
-  let today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  today = today.toISOString();
-
-  // Getting all bookings
   const { data, error } = await supabase
     .from("bookings")
     .select("*")
     .eq("cabinId", cabinId)
-    .or(`startDate.gte.${today},status.eq.checked-in`);
+    .in("status", ["unconfirmed", "checked-in"]);
 
   if (error) {
     console.error(error);
@@ -125,16 +119,11 @@ export async function getBookedDatesByCabinId(cabinId) {
 }
 
 export async function getBookedDatesByGuestId(guestId) {
-  let today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  today = today.toISOString();
-
-  // Getting all bookings for the guest
   const { data, error } = await supabase
     .from("bookings")
     .select("*")
     .eq("guestId", guestId)
-    .or(`startDate.gte.${today},status.eq.checked-in`);
+    .in("status", ["unconfirmed", "checked-in"]);
 
   if (error) {
     console.error(error);
@@ -169,7 +158,7 @@ export async function getCountries() {
   try {
     const res = await fetch("https://api.restcountries.com/countries/v5", {
       headers: {
-        Authorization: "Bearer rc_live_9180769963484b049091df6e78e9dd21",
+        Authorization: `Bearer ${process.env.REST_COUNTRIES_API_KEY}`,
       },
     });
     const countries = await res.json();
