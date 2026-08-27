@@ -1,73 +1,35 @@
 "use server";
-import { auth, signIn, signOut } from "@/app/_lips/auth";
-import {
-  getBookings,
-  getCabin,
-  getSettings,
-  updateGuest,
-  getCabinBookingsWithGuestCount,
-  calculateRemainingCapacityForRange,
-} from "./data-service";
-import supabase from "./supabase";
+
+import { auth } from "@/features/authontaction/services/auth";
+import { getCabin } from "@/features/cabin/services/cabin.services";
+import supabase from "@/shared/api/supabase";
 import { revalidatePath } from "next/cache";
-import { redirect, RedirectType } from "next/navigation";
+import { redirect } from "next/navigation";
+import {
+  calculateRemainingCapacityForRange,
+  getBookings,
+  getCabinBookingsWithGuestCount,
+} from "@/features/reservation/services/reservation.data.services";
+import { getSettings } from "@/shared/api/settings";
 
-export async function login() {
-  return await signIn("google", { redirectTo: "/cabins" });
-}
+type ReservationRequest = {
+  startDate: string | Date;
+  endDate: string | Date;
+  numNights: number;
+  cabinPrice: number;
+  cabinId: number;
+  remainingCapacity?: number;
+};
 
-export async function logout() {
-  return await signOut({ redirectTo: "/" });
-}
-
-export async function updateProfileGuest(formData) {
-  /**
- {
-  id: 363,
-  created_at: '2025-09-17T03:46:18.20546+00:00',
-  fullName: 'Omar Abdulmorid',
-  email: 'omarelmangermff@gmail.com',
-  nationality: null,
-  countryFlag: null,
-  nationalID: null
-} 
- */
+export async function handelDeleteReservation(bookingId: number) {
   const session = await auth();
-  if (!session.user.email) throw new Error("You are not logged in");
+  const userEmail = session?.user?.email;
+  if (!userEmail) throw new Error("You are not logged in");
 
-  const [nationality, countryFlag] = formData.get("nationality").split("%");
-  const nationalID = formData.get("nationalID");
-  if (!/^[A-Za-z0-9]{6,12}$/.test(nationalID))
-    throw new Error("Invalid national ID");
+  const userId = Number(session?.user?.id);
+  if (!Number.isFinite(userId)) throw new Error("Invalid user session");
 
-  const updatedFields = {
-    nationality,
-    countryFlag,
-    nationalID,
-  };
-
-  const { data, error } = await supabase
-    .from("guests")
-    .update(updatedFields)
-    .eq("id", session.user.id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error(error);
-    throw new Error("Guest could not be updated");
-  }
-
-  revalidatePath("/account/profile");
-
-  return data;
-}
-
-export async function handelDeleteReservation(bookingId) {
-  const session = await auth();
-  if (!session.user.email) throw new Error("You are not logged in");
-
-  const reservations = await getBookings(session.user.id);
+  const reservations = await getBookings(userId);
   const ids = reservations.map((r) => r.id);
   if (!ids.includes(bookingId))
     throw new Error("You are not allowed to delete this reservation");
@@ -86,25 +48,33 @@ export async function handelDeleteReservation(bookingId) {
   return data;
 }
 
-export async function handelCreateReservation(reservationData, formData) {
+export async function handelCreateReservation(
+  reservationData: ReservationRequest,
+  formData: FormData,
+) {
   const session = await auth();
-  if (!session.user.email) throw new Error("You are not logged in");
+  const userEmail = session?.user?.email;
+  if (!userEmail) throw new Error("You are not logged in");
+
+  const userId = Number(session?.user?.id);
+  if (!Number.isFinite(userId)) throw new Error("Invalid user session");
 
   const settings = await getSettings();
 
   const { breakfastPrice } = settings;
-  const { startDate, endDate, numNights, cabinPrice, cabinId, remainingCapacity } =
+  const { startDate, endDate, numNights, cabinPrice, cabinId } =
     reservationData;
 
   const numGuests = Number(formData.get("numGuests"));
   const cabin = await getCabin(cabinId);
+  const cabinMaxCapacity = cabin.maxCapacity ?? 0;
   const start = new Date(startDate);
   const end = new Date(endDate);
 
   if (!Number.isInteger(numGuests) || numGuests < 1) {
     throw new Error("The number of guests must be at least one");
   }
-  if (numGuests > cabin.maxCapacity) {
+  if (numGuests > cabinMaxCapacity) {
     throw new Error("This cabin cannot accommodate this number of guests.");
   }
   if (
@@ -119,17 +89,17 @@ export async function handelCreateReservation(reservationData, formData) {
   // Multiple users could try to book simultaneously, so we must verify on the backend
   const cabinBookingsWithGuests = await getCabinBookingsWithGuestCount(cabinId);
   const actualRemainingCapacity = calculateRemainingCapacityForRange(
-    cabin.maxCapacity,
+    cabinMaxCapacity,
     cabinBookingsWithGuests,
     startDate,
-    endDate
+    endDate,
   );
 
   if (numGuests > actualRemainingCapacity) {
     throw new Error(
       `Only ${actualRemainingCapacity} ${
         actualRemainingCapacity === 1 ? "guest" : "guests"
-      } available for the selected dates. Someone may have booked the remaining capacity.`
+      } available for the selected dates. Someone may have booked the remaining capacity.`,
     );
   }
 
@@ -154,7 +124,7 @@ export async function handelCreateReservation(reservationData, formData) {
     cabinPrice,
     cabinId,
     observations,
-    guestId: session.user.id,
+    guestId: userId,
   };
 
   const { data, error } = await supabase
@@ -189,52 +159,60 @@ export async function handelCreateReservation(reservationData, formData) {
   redirect("/cabins/thankyou");
 }
 
-export async function handelEditReservation(formData) {
+export async function handelEditReservation(formData: FormData) {
   const { numGuests, observations, bookingId } = Object.fromEntries(formData);
 
   const session = await auth();
-  if (!session.user.email) throw new Error("You are not logged in");
+  const userEmail = session?.user?.email;
+  if (!userEmail) throw new Error("You are not logged in");
 
-  const reservations = await getBookings(session.user.id);
+  const userId = Number(session?.user?.id);
+  if (!Number.isFinite(userId)) throw new Error("Invalid user session");
+
+  const reservations = await getBookings(userId);
   const ids = reservations.map((r) => r.id);
-  if (!ids.includes(Number(bookingId)))
+  const bookingIdNum = Number(bookingId);
+  if (!ids.includes(bookingIdNum))
     throw new Error("You are not allowed to edit this reservation");
 
   const numGuestsNum = Number(numGuests);
 
   // Get the current booking to validate against remaining capacity
   // excluding this booking's current guest count
-  const currentBooking = reservations.find((r) => r.id === Number(bookingId));
+  const currentBooking = reservations.find((r) => r.id === bookingIdNum);
   if (!currentBooking) throw new Error("Booking not found");
 
-  const cabin = await getCabin(currentBooking.cabinId);
+  const cabinId = currentBooking.cabinId;
+  if (cabinId === null || cabinId === undefined) {
+    throw new Error("Booking is missing a cabin");
+  }
+
+  const cabin = await getCabin(cabinId);
+  const cabinMaxCapacity = cabin.maxCapacity ?? 0;
 
   // Validate that numGuests doesn't exceed cabin max capacity
-  if (numGuestsNum > cabin.maxCapacity) {
+  if (numGuestsNum > cabinMaxCapacity) {
     throw new Error("This cabin cannot accommodate this number of guests.");
   }
 
   // Get all cabin bookings EXCEPT this one to check remaining capacity
-  const allCabinBookings = await getCabinBookingsWithGuestCount(
-    currentBooking.cabinId
-  );
-  const otherBookings = allCabinBookings.filter(
-    (b) => b.id !== Number(bookingId)
-  );
+  const allCabinBookings = await getCabinBookingsWithGuestCount(cabinId);
+  const otherBookings = allCabinBookings.filter((b) => b.id !== bookingIdNum);
 
   // Calculate remaining capacity excluding this booking
   const remainingCapacityForEdit = calculateRemainingCapacityForRange(
-    cabin.maxCapacity,
+    cabinMaxCapacity,
     otherBookings,
-    currentBooking.startDate,
-    currentBooking.endDate
+    currentBooking.startDate ?? new Date(0),
+    currentBooking.endDate ?? new Date(0),
   );
 
   // Check if new guest count would exceed remaining capacity + current booking
-  const maxAllowedGuests = remainingCapacityForEdit + currentBooking.numGuests;
+  const currentGuestCount = currentBooking.numGuests ?? 0;
+  const maxAllowedGuests = remainingCapacityForEdit + currentGuestCount;
   if (numGuestsNum > maxAllowedGuests) {
     throw new Error(
-      `Only ${maxAllowedGuests} guests can be accommodated for these dates.`
+      `Only ${maxAllowedGuests} guests can be accommodated for these dates.`,
     );
   }
 
@@ -256,5 +234,5 @@ export async function handelEditReservation(formData) {
   }
   revalidatePath("/account/reservations/edit/" + bookingId);
   revalidatePath("/account/reservations");
-  redirect("/account/reservations", RedirectType.replace);
+  redirect("/account/reservations");
 }

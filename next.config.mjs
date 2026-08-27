@@ -14,6 +14,12 @@ const nextConfig = {
         port: "",
         pathname: "/a/**",
       },
+      {
+        protocol: "https",
+        hostname: "flags.restcountries.com",
+        port: "",
+        pathname: "/v5/**",
+      }
     ],
   },
 };
