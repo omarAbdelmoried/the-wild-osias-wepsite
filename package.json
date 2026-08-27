@@ -11,6 +11,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.57.2",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "next": "14.2.32",
     "next-auth": "^5.0.0-beta.29",
@@ -18,7 +19,8 @@
     "react-day-picker": "^9.9.0",
     "react-dom": "^18",
     "react-hook-form": "^7.86.0",
-    "resend": "^6.22.1"
+    "resend": "^6.22.1",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@types/react": "19.2.18",

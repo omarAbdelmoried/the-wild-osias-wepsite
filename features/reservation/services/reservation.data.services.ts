@@ -1,5 +1,5 @@
 import supabase from "@/shared/api/supabase";
-import { isWithinInterval, eachDayOfInterval, addDays } from "date-fns";
+import { eachDayOfInterval, addDays, format } from "date-fns";
 import type {
   Booking,
   BookingCapacity,
@@ -57,34 +57,8 @@ export async function getBookedDatesByCabinId(
   const bookedDates = (data ?? [])
     .map((booking: Booking) => {
       return eachDayOfInterval({
-        start: new Date(booking.startDate ?? 0),
-        end: addDays(new Date(booking.endDate ?? 0), -1),
-      });
-    })
-    .flat();
-
-  return bookedDates;
-}
-
-export async function getBookedDatesByGuestId(
-  guestId: number,
-): Promise<Date[]> {
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("*")
-    .eq("guestId", guestId)
-    .in("status", ["unconfirmed", "checked-in"]);
-
-  if (error) {
-    console.error(error);
-    throw new Error("Bookings could not get loaded");
-  }
-
-  const bookedDates = (data ?? [])
-    .map((booking: Booking) => {
-      return eachDayOfInterval({
-        start: new Date(booking.startDate ?? 0),
-        end: addDays(new Date(booking.endDate ?? 0), -1),
+        start: dateKeyToDate(booking.startDate),
+        end: addDays(dateKeyToDate(booking.endDate), -1),
       });
     })
     .flat();
@@ -116,25 +90,30 @@ export function calculateRemainingCapacity(
 ): number {
   if (!selectedDate) return cabinMaxCapacity;
 
-  const selectedDateObj = new Date(selectedDate);
+  const selectedDateKey = toDateKey(selectedDate);
 
   const bookedGuestsForDate = bookings.reduce((total, booking) => {
-    const bookingStart = new Date(booking.startDate ?? 0);
-    const bookingEnd = new Date(booking.endDate ?? 0);
-    const bookingEndExclusive = addDays(bookingEnd, -1);
+    const bookingStartKey = toDateKey(booking.startDate);
+    const bookingEndKey = toDateKey(booking.endDate);
 
-    if (
-      isWithinInterval(selectedDateObj, {
-        start: bookingStart,
-        end: bookingEndExclusive,
-      })
-    ) {
+    if (selectedDateKey >= bookingStartKey && selectedDateKey < bookingEndKey) {
       return total + (booking.numGuests ?? 0);
     }
     return total;
   }, 0);
 
   return Math.max(0, cabinMaxCapacity - bookedGuestsForDate);
+}
+
+function toDateKey(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  if (typeof value === "string") return value.slice(0, 10);
+  return format(value, "yyyy-MM-dd");
+}
+
+function dateKeyToDate(value: string | Date | null | undefined): Date {
+  const [year, month, day] = toDateKey(value).split("-").map(Number);
+  return new Date(year, month - 1, day, 12);
 }
 
 export function calculateRemainingCapacityForRange(
@@ -145,11 +124,9 @@ export function calculateRemainingCapacityForRange(
 ): number {
   if (!startDate || !endDate) return cabinMaxCapacity;
 
-  const startDateObj = new Date(startDate);
-  const endDateObj = new Date(endDate);
   const daysInRange = eachDayOfInterval({
-    start: startDateObj,
-    end: addDays(endDateObj, -1),
+    start: dateKeyToDate(startDate),
+    end: addDays(dateKeyToDate(endDate), -1),
   });
 
   if (daysInRange.length === 0) return cabinMaxCapacity;

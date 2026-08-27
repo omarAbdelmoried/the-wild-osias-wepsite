@@ -143,6 +143,11 @@ export async function handelCreateReservation(
       if (error.message.includes("cannot accommodate")) {
         throw new Error("This cabin cannot accommodate this number of guests.");
       }
+      if (error.message.includes("exceed this cabin capacity")) {
+        throw new Error(
+          "The selected dates do not have enough capacity. Someone may have booked the remaining space.",
+        );
+      }
       if (error.message.includes("check-out date")) {
         throw new Error("The check-out date must be after the check-in date.");
       }

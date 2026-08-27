@@ -1,5 +1,5 @@
 "use client";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 // import { handelCreateReservation } from "@/app/_lips/actions";
 import { useReservation } from "@/features/reservation/context/ReservationContex";
 import { useFormStatus } from "react-dom";
@@ -31,8 +31,8 @@ function ReservationForm({ cabin, user, cabinBookingsWithGuests }) {
   }, [startDate, endDate, maxCapacity, cabinBookingsWithGuests]);
 
   const bookedDate = {
-    startDate,
-    endDate,
+    startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
+    endDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
     numNights,
     cabinPrice,
     cabinId,
