@@ -26,6 +26,7 @@ function relativeDate(value: string) {
 
 export default function Comments({ postId, postSlug, user }: CommentsProps) {
   const [activeReply, setActiveReply] = useState<number | null>(null);
+  const [isCommentsListCollapsed, setIsCommentsListCollapsed] = useState(false);
   const [message, setMessage] = useState("");
   const {
     comments,
@@ -85,59 +86,35 @@ export default function Comments({ postId, postSlug, user }: CommentsProps) {
       className="mt-16 border-t border-primary-800 pt-10"
       aria-labelledby="comments-heading"
     >
-      <h2 id="comments-heading" className="mb-8 text-3xl text-primary-50">
-        Comments ({comments.length})
-      </h2>
-      {isLoading ? (
-        <p className="text-primary-300">Loading comments...</p>
-      ) : isError ? (
-        <p className="text-red-300">
-          Unable to load comments.
-          <br />
-          Please try again.
-        </p>
-      ) : !comments.length ? (
-        <p className="text-primary-300">
-          No comments yet.
-          <br />
-          Be the first to share your thoughts.
-        </p>
-      ) : (
-        <div className="space-y-8">
-          {topLevel.map((comment) => (
-            <ReplyThread
-              key={comment.id}
-              comment={comment}
-              replies={comments.filter(
-                (reply) => reply.parentId === comment.id,
-              )}
-              user={user}
-              deleting={
-                deleteCommentMutation.isPending &&
-                deleteCommentMutation.variables?.id === comment.id
-              }
-              onDelete={deleteComment}
-              postId={postId}
-              setMessage={setMessage}
-              activeReply={activeReply}
-              setActiveReply={setActiveReply}
-            />
-          ))}
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-[0.28em] text-accent-300/80">
+            Community
+          </p>
+          <h2
+            id="comments-heading"
+            className="flex items-center gap-3 text-3xl font-semibold text-primary-50"
+          >
+            Comments
+            <span className="inline-flex min-w-10 items-center justify-center rounded-full border border-primary-700 bg-primary-900 px-2.5 py-1 text-sm font-medium text-accent-200">
+              {comments.length}
+            </span>
+          </h2>
         </div>
-      )}
+      </div>
       {user ? (
         <form
-          className="mt-10 space-y-3"
+          className="my-10 rounded-2xl border border-primary-800 bg-primary-900/50 p-4 sm:p-5"
           onSubmit={handleCommentSubmit(async (values) => {
             const ok = await submitComment(values.content);
             if (ok) resetComment();
           })}
         >
           <label
-            className="block text-lg font-semibold text-primary-100"
+            className="mb-3 block text-base font-semibold text-primary-100"
             htmlFor="comment"
           >
-            Comment
+            Leave a comment
           </label>
           <textarea
             id="comment"
@@ -149,36 +126,100 @@ export default function Comments({ postId, postSlug, user }: CommentsProps) {
               },
             })}
             rows={4}
-            className="w-full border border-primary-700 bg-primary-900 p-3 text-primary-100"
+            className="w-full rounded-xl border border-primary-700 bg-primary-950/60 p-3.5 text-primary-100 shadow-inner outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-500/30"
             aria-invalid={Boolean(commentErrors.content)}
+            placeholder="Share your thoughts..."
           />
           {commentErrors.content ? (
-            <p className="text-sm text-red-300">
+            <p className="mt-2 text-sm text-red-300">
               {commentErrors.content.message}
             </p>
           ) : null}
-          <button
-            disabled={createCommentMutation.isPending || isCommentSubmitting}
-            className="bg-accent-500 px-5 py-3 font-semibold text-primary-950"
-          >
-            {createCommentMutation.isPending || isCommentSubmitting
-              ? "Posting..."
-              : "Post Comment"}
-          </button>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <span className="text-sm text-primary-400">
+              Keep it respectful and relevant.
+            </span>
+            <button
+              disabled={createCommentMutation.isPending || isCommentSubmitting}
+              className="rounded-xl bg-accent-400 px-5 py-3 text-sm font-semibold text-primary-950 transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {createCommentMutation.isPending || isCommentSubmitting
+                ? "Posting..."
+                : "Post Comment"}
+            </button>
+          </div>
         </form>
       ) : (
-        <p className="mt-10 text-primary-300">
-          <Link
-            className="font-semibold text-accent-400 hover:text-accent-300"
-            href={`/login?callbackUrl=${encodeURIComponent(`/blog/${postSlug}`)}`}
-          >
-            Sign in
-          </Link>{" "}
-          to join the conversation.
-        </p>
+        <div className="mt-10 rounded-2xl border border-primary-800 bg-primary-900/50 p-5 text-primary-300">
+          <p>
+            <Link
+              className="font-semibold text-accent-400 transition hover:text-accent-300"
+              href={`/login?callbackUrl=${encodeURIComponent(`/blog/${postSlug}`)}`}
+            >
+              Sign in
+            </Link>{" "}
+            to join the conversation.
+          </p>
+        </div>
       )}
+
+      {isLoading ? (
+        <div className="rounded-2xl border border-primary-800 bg-primary-900/40 p-6 text-primary-300">
+          Loading comments...
+        </div>
+      ) : isError ? (
+        <div className="rounded-2xl border border-red-500/40 bg-red-500/5 p-6 text-red-200">
+          Unable to load comments.
+          <br />
+          Please try again.
+        </div>
+      ) : !comments.length ? (
+        <div className="rounded-2xl border border-dashed border-primary-700 bg-primary-900/30 p-8 text-center text-primary-300">
+          <p className="text-lg text-primary-100">No comments yet.</p>
+          <p className="mt-2">Be the first to share your thoughts.</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setIsCommentsListCollapsed((value) => !value)}
+              className="inline-flex items-center rounded-full border border-primary-700 bg-primary-900 px-3 py-1.5 text-sm font-medium text-primary-200 transition hover:border-primary-600 hover:text-primary-50"
+              aria-expanded={!isCommentsListCollapsed}
+            >
+              {isCommentsListCollapsed ? "Show comments" : "Hide comments"}
+            </button>
+          </div>
+
+          {!isCommentsListCollapsed
+            ? topLevel.map((comment) => (
+                <ReplyThread
+                  key={comment.id}
+                  comment={comment}
+                  replies={comments.filter(
+                    (reply) => reply.parentId === comment.id,
+                  )}
+                  user={user}
+                  deleting={
+                    deleteCommentMutation.isPending &&
+                    deleteCommentMutation.variables?.id === comment.id
+                  }
+                  onDelete={deleteComment}
+                  postId={postId}
+                  setMessage={setMessage}
+                  activeReply={activeReply}
+                  setActiveReply={setActiveReply}
+                />
+              ))
+            : null}
+        </div>
+      )}
+
       {message ? (
-        <p className="mt-4 text-sm text-primary-300" role="status">
+        <p
+          className="mt-4 rounded-xl border border-accent-500/30 bg-accent-500/10 px-3 py-2 text-sm text-primary-200"
+          role="status"
+        >
           {message}
         </p>
       ) : null}
@@ -207,6 +248,7 @@ function ReplyThread({
   activeReply: number | null;
   setActiveReply: (value: number | null) => void;
 }) {
+  const [isRepliesCollapsed, setIsRepliesCollapsed] = useState(true);
   const {
     register: registerReply,
     handleSubmit: handleReplySubmit,
@@ -237,27 +279,30 @@ function ReplyThread({
   }
 
   return (
-    <article className="border-b border-primary-800 pb-7">
+    <article className="rounded-2xl border border-primary-800 bg-primary-950/35 p-4 sm:p-5">
       <CommentBody
         comment={comment}
         user={user}
         deleting={deleting}
         onDelete={onDelete}
       />
+
       {user ? (
         <button
           type="button"
-          className="mt-4 text-sm font-semibold text-accent-400 hover:text-accent-300"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent-300 transition hover:text-accent-200"
           onClick={() =>
             setActiveReply(activeReply === comment.id ? null : comment.id)
           }
         >
+          <span className="text-base">↩</span>
           Reply
         </button>
       ) : null}
+
       {activeReply === comment.id ? (
         <form
-          className="mt-4 space-y-3 pl-4 sm:pl-8"
+          className="mt-4 space-y-3 rounded-xl border border-primary-800 bg-primary-900/40 p-3 sm:ml-8 sm:p-4"
           onSubmit={handleReplySubmit(async (values) => {
             const ok = await submitReply(values.content);
             if (ok) {
@@ -280,13 +325,13 @@ function ReplyThread({
             })}
             rows={3}
             placeholder={`Replying to ${comment.authorName}`}
-            className="w-full border border-primary-700 bg-primary-900 p-3 text-primary-100"
+            className="w-full rounded-xl border border-primary-700 bg-primary-950/60 p-3 text-primary-100 shadow-inner outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-500/30"
             aria-invalid={Boolean(replyErrors.content)}
           />
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3">
             <button
               disabled={createCommentMutation.isPending || isReplySubmitting}
-              className="bg-accent-500 px-4 py-2 font-semibold text-primary-950"
+              className="rounded-xl bg-accent-400 px-4 py-2 text-sm font-semibold text-primary-950 transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {createCommentMutation.isPending || isReplySubmitting
                 ? "Posting..."
@@ -295,7 +340,7 @@ function ReplyThread({
             <button
               type="button"
               onClick={() => setActiveReply(null)}
-              className="px-4 py-2 text-primary-300"
+              className="rounded-xl border border-primary-700 px-4 py-2 text-sm text-primary-300 transition hover:border-primary-600 hover:text-primary-100"
             >
               Cancel
             </button>
@@ -307,20 +352,41 @@ function ReplyThread({
           ) : null}
         </form>
       ) : null}
-      <div className="mt-6 space-y-6 pl-4 sm:pl-8">
-        {replies.map((reply) => (
-          <CommentBody
-            key={reply.id}
-            comment={reply}
-            user={user}
-            deleting={
-              deleteCommentMutation.isPending &&
-              deleteCommentMutation.variables?.id === reply.id
-            }
-            onDelete={onDelete}
-          />
-        ))}
-      </div>
+
+      {replies.length ? (
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <span className="text-sm text-primary-400">
+              {replies.length} {replies.length === 1 ? "reply" : "replies"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsRepliesCollapsed((value) => !value)}
+              className="text-sm font-medium text-accent-300 transition hover:text-accent-200"
+              aria-expanded={!isRepliesCollapsed}
+            >
+              {isRepliesCollapsed ? "Show replies" : "Hide replies"}
+            </button>
+          </div>
+
+          {!isRepliesCollapsed ? (
+            <div className="space-y-4 border-l border-primary-800 pl-4 sm:ml-8 sm:pl-6">
+              {replies.map((reply) => (
+                <CommentBody
+                  key={reply.id}
+                  comment={reply}
+                  user={user}
+                  deleting={
+                    deleteCommentMutation.isPending &&
+                    deleteCommentMutation.variables?.id === reply.id
+                  }
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -337,23 +403,33 @@ function CommentBody({
   onDelete: (id: number) => void;
 }) {
   const isOwner = Boolean(user?.id && Number(user.id) === comment.authorId);
+
   return (
-    <div>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <strong className="text-primary-50">{comment.authorName}</strong>
+    <div className="rounded-xl border border-primary-800 bg-primary-900/40 p-4 sm:p-5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex items-center gap-2">
+          <strong className="text-primary-50">{comment.authorName}</strong>
+          {isOwner ? (
+            <span className="rounded-full border border-accent-500/30 bg-accent-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-200">
+              You
+            </span>
+          ) : null}
+        </div>
         <time className="text-sm text-primary-400" dateTime={comment.createdAt}>
           {relativeDate(comment.createdAt)}
         </time>
       </div>
+
       <p className="mt-3 whitespace-pre-wrap leading-7 text-primary-200">
         {comment.content}
       </p>
+
       {isOwner ? (
         <button
           type="button"
           disabled={deleting}
           onClick={() => onDelete(comment.id)}
-          className="mt-3 text-sm text-red-300 disabled:opacity-50"
+          className="mt-3 text-sm font-medium text-red-300 transition hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {deleting ? "Deleting..." : "Delete"}
         </button>
