@@ -4,8 +4,11 @@ import BlogGallery from "./BlogGallery";
 import Link from "next/dist/client/link";
 import { getBlogPost } from "../services/plog.api";
 import { isValidImageSource } from "../ustlis/isValidImageSource";
+import { auth } from "@/features/authontaction/services/auth";
+import Comments from "./Comments";
 const BlogPostPage = async ({ slug }: { slug: string }) => {
   const post = await getBlogPost(slug);
+  const session = await auth();
 
   return (
     <>
@@ -33,6 +36,7 @@ const BlogPostPage = async ({ slug }: { slug: string }) => {
           className="prose prose-invert max-w-none text-primary-100 text-lg leading-8"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
+        <Comments postId={post.id} postSlug={post.slug} user={session?.user || null} />
       </article>
     </>
   );

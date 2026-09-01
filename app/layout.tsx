@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 import { ReservationProvider } from "../features/reservation/context/ReservationContex";
+import { Providers } from "./providers";
 
 import { Josefin_Sans } from "next/font/google";
 
@@ -32,7 +33,9 @@ export default function RootLayout({ children }) {
         "
         >
           <main className="max-w-7xl mx-auto ">
-            <ReservationProvider>{children}</ReservationProvider>
+            <Providers>
+              <ReservationProvider>{children}</ReservationProvider>
+            </Providers>
           </main>
         </div>
         <Footer />
